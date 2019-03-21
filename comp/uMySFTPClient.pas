@@ -1099,7 +1099,7 @@ begin
           end;
       end;
       Aborted := False;
-      StoredFingerprint := FHashMgr.GetFingerprint(FHost, FPort);
+      Pointer(StoredFingerprint) := FHashMgr.GetFingerprint(FHost, FPort);
       if StoredFingerprint = nil then
         Aborted := HandleFingerprint(fsNew, Fingerprint)
       else if not FHashMgr.CompareFingerprints(Fingerprint, StoredFingerprint) then
@@ -1114,9 +1114,10 @@ begin
 
     libssh2_session_set_blocking(FSession, 1);
     {+}
-    if FTimeOut<10 then FTimeOut := 10;
+    if (FTimeOut > 0) and (FTimeOut<10) then FTimeOut := 10;
+    if FKeepAlive then
+      libssh2_keepalive_config(FSession, Integer(FKeepAlive), FTimeOut); // FTimeOut - number of seconds
     {+.}
-    libssh2_keepalive_config(FSession, Integer(FKeepAlive), {+}{number of seconds:}FTimeOut{+.});
 
     UserAuthList := libssh2_userauth_list(FSession, PAnsiChar(AnsiString(FUserName)),
       Length(AnsiString(FUserName)));
@@ -1272,6 +1273,9 @@ begin
   FConnected := False;
   FCanceled := False;
   FKeepAlive := False;
+  {+}
+  FTimeOut := 10;
+  {+.}
   FSockBufLen := 8 * 1024;
   FSocket := INVALID_SOCKET;
   FCodePage := CP_UTF8;
@@ -1651,7 +1655,7 @@ begin
 
     if AResume then
     begin
-      Total := Attribs.FileSize - ADest.Position;
+      Total := UInt64(Attribs.FileSize) - UInt64(ADest.Position);
       libssh2_sftp_seek64(FHandle, ADest.Position);
     end
     else
@@ -1912,7 +1916,7 @@ begin
       end;
     until (N <= 0) or FCanceled;
   finally
-    FreeMem(Buf);
+    FreeMem(StartBuf);
     libssh2_sftp_close(FHandle);
   end;
 end;

@@ -1865,7 +1865,7 @@ function libssh2_channel_open_session(session: PLIBSSH2_SESSION): PLIBSSH2_CHANN
 const
   SSession = 'session';
 begin
-  Result := libssh2_channel_open_ex(session, SSession, Length(SSession) - 1, LIBSSH2_CHANNEL_WINDOW_DEFAULT, LIBSSH2_CHANNEL_PACKET_DEFAULT, nil, 0);
+  Result := libssh2_channel_open_ex(session, SSession, Length(SSession), LIBSSH2_CHANNEL_WINDOW_DEFAULT, LIBSSH2_CHANNEL_PACKET_DEFAULT, nil, 0);
 end;
 
 function libssh2_channel_direct_tcpip(session: PLIBSSH2_SESSION; const host: PAnsiChar; port: Integer): PLIBSSH2_CHANNEL;
@@ -1903,17 +1903,17 @@ end;
 
 function libssh2_channel_shell(channel: PLIBSSH2_CHANNEL): Integer;
 begin
-  Result := libssh2_channel_process_startup(channel, 'shell', Length('shell') - 1, nil, 0);
+  Result := libssh2_channel_process_startup(channel, 'shell', Length('shell'), nil, 0);
 end;
 
 function libssh2_channel_exec(channel: PLIBSSH2_CHANNEL; const command: PAnsiChar): Integer;
 begin
-  Result := libssh2_channel_process_startup(channel, 'exec', Length('exec') - 1, command, Length(command));
+  Result := libssh2_channel_process_startup(channel, 'exec', Length('exec'), command, Length(command));
 end;
 
 function libssh2_channel_subsystem(channel: PLIBSSH2_CHANNEL; const subsystem: PAnsiChar): Integer;
 begin
-  Result := libssh2_channel_process_startup(channel, 'subsystem', Length('subsystem') - 1, subsystem, Length(subsystem));
+  Result := libssh2_channel_process_startup(channel, 'subsystem', Length('subsystem'), subsystem, Length(subsystem));
 end;
 
 function libssh2_channel_read(channel: PLIBSSH2_CHANNEL; buf: PAnsiChar; buflen: SIZE_T): Integer;
