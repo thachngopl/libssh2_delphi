@@ -30,7 +30,7 @@ uses
   Classes, SysUtils, WinSock, libssh2, libssh2_sftp;
 
 const
-  AF_INET6 = 32;
+  AF_INET6 = 23;
   SFTPCLIENT_VERSION = '0.5';
 
 type
@@ -985,12 +985,37 @@ type
   end;
 
   function UserAuthPKey: Boolean;
+  //{$REGION 'History'}
+  //  19-Sep-2019 - Failed While connecting with a Private Key only
+  //                missing paramters must be Nil not EmptyStr
+  //{$ENDREGION}
   var
     Returned: Integer;
+    sUserName, sPubKeyPath, sPrivKeyPath, sPrivKeyPass: AnsiString;
+    pUserName, pPubKeyPath, pPrivKeyPath, pPrivKeyPass: PAnsiChar;
   begin
-    Returned := libssh2_userauth_publickey_fromfile(FSession, PAnsiChar(AnsiString(FUserName)),
-      PAnsiChar(AnsiString(FPubKeyPath)), PAnsiChar(AnsiString(FPrivKeyPath)),
-      PAnsiChar(AnsiString(FPrivKeyPass)));
+    //?if (FUserName = EmptyStr) then pUserName := nil else
+    begin
+      sUserName := AnsiString(sUserName);
+      pUserName := PAnsiChar(sPubKeyPath);
+    end;
+    if (FPubKeyPath = EmptyStr) then pPubKeyPath := nil else
+    begin
+      sPubKeyPath := AnsiString(FPubKeyPath);
+      pPubKeyPath := PAnsiChar(sPubKeyPath);
+    end;
+    if (FPrivKeyPath = EmptyStr) then pPrivKeyPath := nil else
+    begin
+      sPrivKeyPath := AnsiString(FPrivKeyPath);
+      pPrivKeyPath := PAnsiChar(sPrivKeyPath);
+    end;
+    if (FPrivKeyPass = EmptyStr) then pPrivKeyPass := nil else
+    begin
+      sPrivKeyPass := AnsiString(FPrivKeyPass);
+      pPrivKeyPass := PAnsiChar(sPrivKeyPass);
+    end;
+    Returned := libssh2_userauth_publickey_fromfile(FSession,
+      pUserName, pPubKeyPath, pPrivKeyPath, pPrivKeyPass);
     Result := Returned = 0;
   end;
 
@@ -1039,7 +1064,8 @@ label auth;
 
 var
   Sock: Integer;
-  Fingerprint, StoredFingerprint: array of Byte;
+  Fingerprint{, StoredFingerprint}: array of Byte;
+  StoredFingerprint: Pointer;
   Abstract: TAbstractData;
   Aborted: Boolean;
   UserAuthList: PAnsiChar;
@@ -1099,7 +1125,7 @@ begin
           end;
       end;
       Aborted := False;
-      Pointer(StoredFingerprint) := FHashMgr.GetFingerprint(FHost, FPort);
+      {Pointer(StoredFingerprint)}StoredFingerprint := FHashMgr.GetFingerprint(FHost, FPort);
       if StoredFingerprint = nil then
         Aborted := HandleFingerprint(fsNew, Fingerprint)
       else if not FHashMgr.CompareFingerprints(Fingerprint, StoredFingerprint) then
@@ -1295,7 +1321,7 @@ begin
     RaiseSSHError('Invalid winsock version!');
     Exit;
   end;
-  Result := socket(Ord(AF_INET), SOCK_STREAM, IPPROTO_TCP);
+  Result := socket(Ord(FIPVersion), SOCK_STREAM, IPPROTO_TCP);
   if Result = INVALID_SOCKET then
   begin
     RaiseSSHError(SysErrorMessage(WSAGetLastError));
